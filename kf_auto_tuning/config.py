@@ -14,9 +14,10 @@ class SystemConfig:
     steps: int
     nx: int
     nz: int
+    data_seed: int = None  # Add seed for data generation
 
 @dataclass
 class OptimizationConfig:
     param_bounds: dict
     n_calls: int
-    random_state: int
+    opt_seed: int = None  # Rename for clarity

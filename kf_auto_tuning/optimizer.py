@@ -22,7 +22,7 @@ class ParameterOptimizer:
             self.cost_function,
             space,
             n_calls=self.config.n_calls,
-            random_state=self.config.random_state
+            random_state=self.config.opt_seed
         )
 
         return {

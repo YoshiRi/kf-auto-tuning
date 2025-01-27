@@ -10,6 +10,9 @@ class DataGenerator:
 
     def generate(self) -> Tuple[np.ndarray, np.ndarray]:
         """シミュレーションデータを生成"""
+        if self.config.data_seed is not None:
+            np.random.seed(self.config.data_seed)
+        
         x = self.config.x0.copy()
         true_states = []
         observations = []
