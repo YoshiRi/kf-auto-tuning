@@ -4,7 +4,7 @@ from kf_auto_tuning.data_generator import DataGenerator
 from kf_auto_tuning.kalman_filter import KalmanFilter
 from kf_auto_tuning.optimizer import ParameterOptimizer
 from kf_auto_tuning.visualization import ResultVisualizer
-
+from kf_auto_tuning.models import DefaultModel
     
 def run_experiment(system_config: SystemConfig, opt_config: OptimizationConfig, plot=False):
     # データ生成
@@ -96,30 +96,10 @@ def analyze_results(experiments, plot=False):
                 })
             
 def main():
-    # システム設定
-    base_system_config = SystemConfig(
-        F=np.array([[1, 0.1], [0, 1]]),
-        G=np.array([[0], [1]]),
-        H=np.array([[1, 0]]),
-        Q_true=np.diag([0.0]),
-        R_true=0.5,
-        x0=np.array([0, 1]),
-        P0=np.eye(2),
-        u=0,
-        steps=100,
-        nx=2,
-        nz=1,
-        data_seed=42  # デフォルトシード
-    )
-    
-    # 最適化設定
-    base_opt_config = OptimizationConfig(
-        param_bounds={'Q': (0.01, 1.0), 'R': (0.1, 1.0)},
-        n_calls=30,
-        opt_seed=42  # デフォルトシード
-    )
+    # default config
+    model = DefaultModel()
 
-    run_experiment(base_system_config, base_opt_config, plot=True)
+    run_experiment(model.system_config, model.optimization_config, plot=True)
     # for multiple_experiments_sample
     #multiple_experiments_sample(base_system_config, base_opt_config)
     
