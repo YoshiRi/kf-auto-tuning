@@ -1,11 +1,11 @@
 # KF Autotune
 
 This project will handle Python based kalman filter autotuning code.
-Details are not desined yet.
+Details are not designed yet.
 
-## 1 dimentional kf optimization
+## 1-dimensional KF optimization
 
-Try run 
+Try running
 
 ```
 python3 mock/kf_auto_tune_sample1d.py
