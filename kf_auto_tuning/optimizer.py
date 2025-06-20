@@ -6,10 +6,11 @@ from .config import OptimizationConfig
 
 class ParameterOptimizer:
     """ベイズ最適化によるパラメータチューニングクラス"""
-    
-    def __init__(self, cost_function: Callable, config: OptimizationConfig):
+
+    def __init__(self, cost_function: Callable, config: OptimizationConfig, nx: int):
         self.cost_function = cost_function
         self.config = config
+        self.nx = nx
 
     def optimize(self) -> Dict:
         """最適化を実行"""
@@ -26,7 +27,7 @@ class ParameterOptimizer:
         )
 
         return {
-            'optimal_Q': np.diag([result.x[0]]),
+            'optimal_Q': np.diag(np.full(self.nx, result.x[0])),
             'optimal_R': result.x[1],
             'optimization_result': result
         }
