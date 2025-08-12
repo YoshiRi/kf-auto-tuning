@@ -41,7 +41,7 @@ class ExperimentRunner:
         def cost_function(params):
             kf = KalmanFilter(self.system_config)
             _, metrics = kf.run(
-                Q=np.diag([params[0]]),
+                Q=np.diag(np.full(self.system_config.nx, params[0])),
                 R=params[1],
                 observations=observations,
                 true_states=true_states
@@ -60,7 +60,7 @@ class ExperimentRunner:
             return cost
 
         # --- パラメータ最適化 ---
-        optimizer = ParameterOptimizer(cost_function, self.opt_config)
+        optimizer = ParameterOptimizer(cost_function, self.opt_config, self.system_config.nx)
         result = optimizer.optimize()
         print(f"Optimal Parameters: Q={result['optimal_Q']}, R={result['optimal_R']}")
 
