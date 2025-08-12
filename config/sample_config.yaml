@@ -2,7 +2,12 @@ system_config:
   F: [[1, 0.1], [0, 1]]
   G: [[0], [1]]
   H: [[1, 0]]
-  Q_true: [0.0]
+  # Q_true must match the state dimension (nx=2). The previous configuration
+  # specified a single value which resulted in a (1,1) matrix. This was
+  # broadcast when added to the state vector, effectively injecting the same
+  # noise value into both states. Use two values so Q_true becomes a 2x2
+  # diagonal matrix.
+  Q_true: [0.0, 0.0]
   R_true: 0.5
   x0: [0, 1]
   P0: [[1, 0], [0, 1]]
