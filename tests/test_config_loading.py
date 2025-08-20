@@ -5,7 +5,13 @@ import os
 class TestConfigLoading(unittest.TestCase):
     def setUp(self):
         # Construct the path to the YAML configuration file.
-        self.config_path = os.path.join(os.path.dirname(__file__), '..', 'kf_auto_tuning', 'sample_config.yaml')
+        # Configuration file resides under the top level 'config' directory
+        # of the repository. The previous path pointed to
+        # 'kf_auto_tuning/sample_config.yaml', which does not exist and caused
+        # the test to fail.
+        self.config_path = os.path.join(
+            os.path.dirname(__file__), '..', 'config', 'sample_config.yaml'
+        )
 
     def test_yaml_loading(self):
         # Ensure the YAML file exists.
