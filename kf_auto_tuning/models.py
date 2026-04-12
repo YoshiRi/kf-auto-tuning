@@ -1,54 +1,129 @@
+"""kf_auto_tuning/models.py
+
+設定を保持するモデルクラス群。
+各クラスは YAML から設定を読み込み、run() で実験を実行します。
+
+クラス
+------
+DefaultModel
+    NIS（観測一貫性）のみをコスト関数に使う標準モデル。
+
+AdvancedModel
+    NEES（推定誤差一貫性）と NIS を組み合わせた複合コストを使う高度なモデル。
+    真値が存在する場合により厳密なチューニングが可能。
+"""
+
+from __future__ import annotations
+
 import yaml
 import numpy as np
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 from kf_auto_tuning.config import SystemConfig, OptimizationConfig
 
-class DefaultModel:
-    def __init__(self, config_path: str = None):
-        """
-        デフォルトモデルの初期化。設定ファイル (YAML) が指定された場合、その内容でシステム設定と最適化設定を上書きします。
-        設定ファイルは以下のような形式を想定しています:
-        """
-        if not config_path:
-            from pathlib import Path
-            default_file_path = (Path(__file__).resolve().parent.parent / 'config' / 'sample_config.yaml')
-            config_path = str(default_file_path)
-            print(f"Using default config file: {default_file_path}")
-            
-        try:        
-            with open(config_path, 'r') as f:
-                cfg = yaml.safe_load(f)   
-            system_cfg = cfg.get("system_config", {})
-            opt_cfg = cfg.get("optimization_config", {})
-            # Convert list representations to numpy arrays if necessary
-            if "F" in system_cfg:
-                system_cfg["F"] = np.array(system_cfg["F"])
-            if "G" in system_cfg:
-                system_cfg["G"] = np.array(system_cfg["G"])
-            if "H" in system_cfg:
-                system_cfg["H"] = np.array(system_cfg["H"])
-            if "Q_true" in system_cfg:
-                # Assume Q_true is given as a list for diagonal elements
-                system_cfg["Q_true"] = np.diag(system_cfg["Q_true"])
-            if "x0" in system_cfg:
-                system_cfg["x0"] = np.array(system_cfg["x0"])
-            if "P0" in system_cfg:
-                system_cfg["P0"] = np.array(system_cfg["P0"])
-        except Exception as e:
-            print(f"Error loading configuration file: {e}")
-            
-        # デフォルト設定
-        self.system_config = SystemConfig(**system_cfg)
-        self.optimization_config = OptimizationConfig(**opt_cfg)
 
-    def run(self):
-        # モデルの実行ロジックを実装
-        pass
+def _load_config(config_path: Optional[str]) -> tuple[SystemConfig, OptimizationConfig]:
+    """YAML ファイルを読み込んで SystemConfig と OptimizationConfig を返す共通ローダー。"""
+    if not config_path:
+        default_file_path = (
+            Path(__file__).resolve().parent.parent / "config" / "sample_config.yaml"
+        )
+        config_path = str(default_file_path)
+        print(f"Using default config file: {default_file_path}")
+
+    with open(config_path, "r") as f:
+        cfg = yaml.safe_load(f)
+
+    system_cfg = cfg.get("system_config", {})
+    opt_cfg = cfg.get("optimization_config", {})
+
+    # リスト形式を numpy 配列に変換
+    for key in ("F", "G", "H", "x0", "P0"):
+        if key in system_cfg:
+            system_cfg[key] = np.array(system_cfg[key])
+    if "Q_true" in system_cfg:
+        system_cfg["Q_true"] = np.diag(system_cfg["Q_true"])
+
+    return SystemConfig(**system_cfg), OptimizationConfig(**opt_cfg)
+
+
+class DefaultModel:
+    """NIS コスト関数を用いる標準的なカルマンフィルタ自動チューニングモデル。
+
+    Parameters
+    ----------
+    config_path:
+        YAML 設定ファイルのパス。省略時は ``config/sample_config.yaml`` を使用。
+    """
+
+    def __init__(self, config_path: Optional[str] = None) -> None:
+        try:
+            self.system_config, self.optimization_config = _load_config(config_path)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load configuration: {e}") from e
+
+    def run(self, plot: bool = False) -> Dict[str, Any]:
+        """NIS コスト関数を使って最適化実験を実行する。
+
+        Parameters
+        ----------
+        plot:
+            True のとき最適化進捗と追跡結果をプロットする。
+
+        Returns
+        -------
+        dict
+            実験結果辞書（``true_params``, ``optimized_params``, ``metrics``,
+            ``estimation_results``, ``experiments``）。
+        """
+        from kf_auto_tuning.experiment_runner import ExperimentRunner
+
+        runner = ExperimentRunner(
+            self.system_config,
+            self.optimization_config,
+            cost_type="nis",
+        )
+        return runner.run_experiment(plot=plot)
+
 
 class AdvancedModel:
-    def __init__(self):
-        # AdvancedModel 専用の初期化処理
-        pass
+    """NEES + NIS 複合コスト関数を用いる高度なカルマンフィルタ自動チューニングモデル。
 
-    def run(self):
-        # 高度なモデル実行ロジックを実装
-        pass
+    真値（状態推定誤差）と観測残差の両方を使って一貫性を評価するため、
+    DefaultModel より厳密なチューニングが可能です。
+
+    Parameters
+    ----------
+    config_path:
+        YAML 設定ファイルのパス。省略時は ``config/sample_config.yaml`` を使用。
+    """
+
+    def __init__(self, config_path: Optional[str] = None) -> None:
+        try:
+            self.system_config, self.optimization_config = _load_config(config_path)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load configuration: {e}") from e
+
+    def run(self, plot: bool = False) -> Dict[str, Any]:
+        """NEES + NIS 複合コスト関数を使って最適化実験を実行する。
+
+        Parameters
+        ----------
+        plot:
+            True のとき最適化進捗と追跡結果をプロットする。
+
+        Returns
+        -------
+        dict
+            実験結果辞書（``true_params``, ``optimized_params``, ``metrics``,
+            ``estimation_results``, ``experiments``）。
+        """
+        from kf_auto_tuning.experiment_runner import ExperimentRunner
+
+        runner = ExperimentRunner(
+            self.system_config,
+            self.optimization_config,
+            cost_type="combined",
+        )
+        return runner.run_experiment(plot=plot)

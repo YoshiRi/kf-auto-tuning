@@ -1,9 +1,12 @@
 [project]
 name = "kf-auto-tuning"
 version = "0.1.0"
-description = "Add your description here"
+description = "Bayesian auto-tuning of Kalman filter noise parameters using NEES/NIS consistency metrics"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "pyyaml"
+    "numpy",
+    "pyyaml",
+    "scikit-optimize",
+    "matplotlib",
 ]
